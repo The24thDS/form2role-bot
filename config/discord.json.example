@@ -1,0 +1,4 @@
+{
+  "token": "Your bot token",
+  "roles": ["These", "roles", "will", "be", "assigned"]
+}

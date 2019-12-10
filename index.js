@@ -1,6 +1,9 @@
+const Discord = require("discord.js");
 const { google } = require("googleapis");
 
 const { apiKey, spreadsheetId, range } = require("./config/google.json");
+const { token, roles } = require("./config/discord.json");
+const client = new Discord.Client();
 
 const fetchRows = async (spreadsheetId, range, sheetsConnection) => {
   try {
@@ -21,3 +24,5 @@ connection = google.sheets({
 });
 
 fetchRows(spreadsheetId, range, connection).then(rows => console.log(rows));
+
+client.login(token);
