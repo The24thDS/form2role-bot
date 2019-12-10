@@ -1,0 +1,5 @@
+{
+  "apiKey": "Your API Key",
+  "spreadsheetId": "The ID of your spreadsheet",
+  "range": "Range of data (eg: B3:E)"
+}
