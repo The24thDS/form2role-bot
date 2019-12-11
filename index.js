@@ -60,7 +60,13 @@ const extractDiscordIDs = rows => {
 
 client.once("ready", () => {
   setInterval(async () => {
-    const rows = await fetchRows(spreadsheetId, range, connection);
+    let rows;
+    try {
+      rows = await fetchRows(spreadsheetId, range, connection);
+    } catch (err) {
+      console.error("fetch rows", err);
+      rows = [];
+    }
     const newEntries = extractNewEntries(oldRows, rows);
     if (newEntries.length > 0) {
       const usernames = extractDiscordIDs(newEntries);
@@ -68,7 +74,7 @@ client.once("ready", () => {
     } else {
       console.log("No new entries");
     }
-  }, 60000);
+  }, 60000); // refresh rate: 60000 milliseconds == 1 minute
 });
 
 client.login(token);
