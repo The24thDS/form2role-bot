@@ -4,12 +4,12 @@ it("is returning rows", async () => {
   const mockSheetsConnection = {
     spreadsheets: {
       values: {
-        get: obj =>
+        get: (obj) =>
           Promise.resolve({
-            data: { values: [["SomeUsername#6444"], ["AnotherUsername#3336"]] }
-          })
-      }
-    }
+            data: { values: [["SomeUsername#6444"], ["AnotherUsername#3336"]] },
+          }),
+      },
+    },
   };
   expect.assertions(1);
   expect(
