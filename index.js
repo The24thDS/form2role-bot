@@ -8,9 +8,7 @@ const connection = google.sheets({
 });
 
 const { token, roles } = require('./config/discord.json');
-const client = new Discord.Client({
-  fetchAllMembers: true,
-});
+const client = new Discord.Client();
 
 let oldRows = [];
 let guild = null;
