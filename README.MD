@@ -42,6 +42,7 @@ You will need a bot token, to generate one follow these steps:
 - Create an application and give it a name and a description
 - Select "Save Changes" at the bottom right and then navigate to the "Bot" section on the left-hand side.
 - There, create a bot user by clicking on "Add Bot".
+- Under **_PRIVILEGED GATEWAY INTENTS_** activate _SERVER MEMBERS INTENT_ and save the changes.
   After confirming, reveal the token.
 
 Invite the bot to your discord server:

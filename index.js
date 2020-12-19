@@ -1,19 +1,22 @@
-const Discord = require("discord.js");
-const { google } = require("googleapis");
+const Discord = require('discord.js');
+const { google } = require('googleapis');
 
-const { apiKey, spreadsheetId, range } = require("./config/google.json");
+const { apiKey, spreadsheetId, range, rate } = require('./config/google.json');
 const connection = google.sheets({
-  version: "v4",
-  auth: apiKey
+  version: 'v4',
+  auth: apiKey,
 });
 
-const { token, roles } = require("./config/discord.json");
-const client = new Discord.Client();
+const { token, roles } = require('./config/discord.json');
+const client = new Discord.Client({
+  fetchAllMembers: true,
+});
 
 let oldRows = [];
+let guild = null;
 
-const logError = error => {
-  console.error("error log " + new Date());
+const logError = (error) => {
+  console.error('error log ' + new Date());
   console.error(error);
 };
 
@@ -21,7 +24,7 @@ const fetchRows = async (spreadsheetId, range, sheetsConnection) => {
   try {
     const response = await sheetsConnection.spreadsheets.values.get({
       spreadsheetId: spreadsheetId,
-      range: range
+      range: range,
     });
     const rows = response.data.values;
     return rows;
@@ -32,31 +35,33 @@ const fetchRows = async (spreadsheetId, range, sheetsConnection) => {
 
 const assignRoles = async (usernames, roleNames) => {
   try {
-    const guildMembers = client.guilds.array()[0].members.array();
-    const guildRoles = client.guilds.array()[0].roles.array();
-    // * getting Role instances of role names
-    const Roles = guildRoles.filter(Role => roleNames.includes(Role.name));
-    // * getting GuildMember instances of usernames and setting roles
-    guildMembers.forEach(async member => {
-      const username = member.user.username + "#" + member.user.discriminator;
-      if (usernames.includes(username)) {
-        const notAssignedRoles = [];
-        Roles.forEach(role => {
-          if (!member.roles.array().includes(role)) {
-            notAssignedRoles.push(role);
-          }
-        });
-        if (notAssignedRoles.length > 0) {
-          await member.addRoles(Roles);
-          console.log(
-            "Assigned " +
-              notAssignedRoles.map(role => role.name) +
-              " to " +
-              username
-          );
-        } else {
-          console.log(username + " already has all the roles assigned");
+    await guild.members.fetch();
+    await guild.roles.fetch();
+    const roles = guild.roles.cache.filter((role) =>
+      roleNames.includes(role.name)
+    );
+    const members = guild.members.cache.filter(
+      ({ user: { username, discriminator } }) =>
+        usernames.includes(`${username}#${discriminator}`)
+    );
+    members.each(async (member) => {
+      const notAssignedRoles = [];
+      roles.each((role) => {
+        if (!member.roles.cache.has(role)) {
+          notAssignedRoles.push(role.name);
         }
+      });
+      if (notAssignedRoles.length > 0) {
+        await member.roles.add(roles);
+        console.log(
+          `Assigned ${notAssignedRoles.join(', ')} to ${member.user.username}#${
+            member.user.discriminator
+          }`
+        );
+      } else {
+        console.log(
+          `${member.user.username}#${member.user.discriminator} already has all the roles assigned`
+        );
       }
     });
   } catch (err) {
@@ -69,25 +74,31 @@ const extractNewEntries = (oldRows, rows) => {
   if (rows.length > oldRows.length) {
     newRows = rows.slice(oldRows.length);
   }
-  newRows.forEach(row => {
+  newRows.forEach((row) => {
     oldRows.push(row);
   });
   return newRows;
 };
 
-const extractDiscordIDs = rows => {
-  return rows.map(user => user[0]);
+const extractDiscordIDs = (rows) => {
+  return rows.map((user) => user[0]);
 };
 
 client.once(
-  "ready",
+  'ready',
   () => {
-    console.log("Bot started with these settings:");
-    console.log("• Spreadsheet ID: " + spreadsheetId);
-    console.log("• Range: " + range);
-    console.log("• Roles: " + roles.join(", "));
+    console.log('Bot started with these settings:');
+    console.log(`• Spreadsheet ID: ${spreadsheetId}`);
+    console.log(`• Range: ${range}`);
+    console.log(`• Rate: ${rate} seconds`);
+    console.log(`• Roles: ${roles.join(', ')}`);
+    console.log(
+      `• Server: ${
+        guild ? guild.name : "Error! Bot isn't a member of any server!"
+      }`
+    );
     setInterval(async () => {
-      console.log("\nChecked for new entries on " + new Date().toString());
+      console.log('\nChecked for new entries on ' + new Date().toString());
       let rows;
       try {
         rows = await fetchRows(spreadsheetId, range, connection);
@@ -98,23 +109,27 @@ client.once(
           const usernames = extractDiscordIDs(newEntries);
           assignRoles(usernames, roles);
         } else {
-          console.log("No new entries");
+          console.log('No new entries');
         }
       } catch (err) {
-        if (rows === undefined) console.error("Google Sheet is empty");
+        if (rows === undefined) console.error('Google Sheet is empty');
         logError(err);
         rows = [];
       }
-    }, 60000); // refresh rate: 60000 milliseconds == 1 minute
+    }, rate * 1000); // refresh rate: 1000 milliseconds == 1 second
   },
   logError
 );
 
-client.on("error", logError);
+client.on('error', logError);
 
 const start = async () => {
   try {
     await client.login(token);
+    guild = client.guilds.cache.first();
+    if (!guild) {
+      throw new Error("Error! Bot isn't a member of any server!");
+    }
   } catch (err) {
     logError(err);
     setTimeout(start, 30000);
@@ -123,11 +138,11 @@ const start = async () => {
 
 start();
 
-client.on("disconnect", start);
+client.on('disconnect', start);
 
 module.exports = {
   fetchRows,
   assignRoles,
   extractNewEntries,
-  extractDiscordIDs
+  extractDiscordIDs,
 };
