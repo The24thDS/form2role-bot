@@ -27,7 +27,7 @@
   },
   "homepage": "https://github.com/The24thDS/form2role-bot#readme",
   "dependencies": {
-    "discord.js": "^12.5.1",
+    "discord.js": "^12.5.2",
     "googleapis": "^66.0.0"
   },
   "devDependencies": {
